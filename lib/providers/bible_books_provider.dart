@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import '../models/bible_reading.dart';
+import '../models/bible_book.dart';
 import '../services/database_helper.dart';
 
 class BibleBooksProvider extends ChangeNotifier {

@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../models/bible_reading.dart';
+import '../models/reading_history.dart';
 import '../services/database_helper.dart';
 import '../services/date_helper.dart';
 

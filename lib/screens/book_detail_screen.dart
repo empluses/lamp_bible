@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../models/bible_reading.dart';
+import '../models/book_note.dart';
+import '../models/bible_book.dart';
 import '../services/database_helper.dart';
 
 class BookDetailScreen extends StatefulWidget {
