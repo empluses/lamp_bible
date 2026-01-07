@@ -5,6 +5,7 @@ import '../providers/bible_reading_provider.dart';
 import '../providers/bible_books_provider.dart';
 import '../providers/reading_history_provider.dart';
 import '../providers/theme_provider.dart';
+import '../services/database_helper.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -136,6 +137,173 @@ class SettingsScreen extends StatelessWidget {
     );
   }
 
+  Future<void> _showResetConfirmDialog(
+    BuildContext context,
+    String title,
+    String message,
+    VoidCallback onConfirm,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              const Icon(Icons.warning, color: Colors.orange),
+              const SizedBox(width: 10),
+              Text(title),
+            ],
+          ),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('초기화'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      onConfirm();
+    }
+  }
+
+  Future<void> _resetAllData(BuildContext context) async {
+    _showResetConfirmDialog(
+      context,
+      '모든 데이터 초기화',
+      '모든 성경 읽기 데이터, 성경책 정보, 읽기 기록, 메모가 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.',
+      () async {
+        try {
+          final db = await DatabaseHelper.instance.database;
+          await db.delete('bible_readings');
+          await db.delete('bible_books');
+          await db.delete('reading_history');
+          await db.delete('user_notes');
+          await db.delete('book_notes');
+
+          if (context.mounted) {
+            // 모든 provider 새로고침
+            await context.read<BibleReadingProvider>().loadAllReadings();
+            await context.read<BibleBooksProvider>().loadAllBooks();
+            await context.read<ReadingHistoryProvider>().loadHistoryForYear(
+                  DateTime.now().year,
+                );
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('모든 데이터가 초기화되었습니다'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('초기화 실패: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  Future<void> _resetReadingHistory(BuildContext context) async {
+    _showResetConfirmDialog(
+      context,
+      '읽기 기록 초기화',
+      '모든 완료 표시와 묵상 노트가 삭제됩니다.\n성경 읽기 URL과 성경책 정보는 유지됩니다.',
+      () async {
+        try {
+          final db = await DatabaseHelper.instance.database;
+          await db.delete('reading_history');
+          await db.delete('user_notes');
+          await db.delete('book_notes');
+
+          if (context.mounted) {
+            await context.read<ReadingHistoryProvider>().loadHistoryForYear(
+                  DateTime.now().year,
+                );
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text('읽기 기록이 초기화되었습니다'),
+                  ],
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('초기화 실패: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  Future<void> _handleCsvImport(
+    BuildContext context,
+    Future<bool> Function() importFunction,
+    Function refreshFunction,
+  ) async {
+    final success = await importFunction();
+    if (context.mounted) {
+      if (success) {
+        await refreshFunction();
+        final csvProvider = context.read<CsvImportProvider>();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text('${csvProvider.importedCount}개 항목이 업데이트되었습니다'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        final csvProvider = context.read<CsvImportProvider>();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(csvProvider.lastError ?? '가져오기 실패'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   String _getThemeModeText(ThemeMode mode) {
     switch (mode) {
       case ThemeMode.light:
@@ -183,30 +351,11 @@ class SettingsScreen extends StatelessWidget {
                     : const Icon(Icons.download),
                 onTap: csvProvider.isDownloading || csvProvider.isImporting
                     ? null
-                    : () async {
-                        final success = await csvProvider.importReadingsAuto();
-                        if (context.mounted) {
-                          if (success) {
-                            await readingProvider.loadAllReadings();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${csvProvider.importedCount}개 항목이 가져와졌습니다',
-                                ),
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  csvProvider.lastError ?? '가져오기 실패',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
+                    : () => _handleCsvImport(
+                          context,
+                          csvProvider.importReadingsAuto,
+                          readingProvider.loadAllReadings,
+                        ),
               );
             },
           ),
@@ -227,31 +376,11 @@ class SettingsScreen extends StatelessWidget {
                     : const Icon(Icons.file_open),
                 onTap: csvProvider.isImporting
                     ? null
-                    : () async {
-                        final success =
-                            await csvProvider.importReadingsFromFile();
-                        if (context.mounted) {
-                          if (success) {
-                            await readingProvider.loadAllReadings();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${csvProvider.importedCount}개 항목이 가져와졌습니다',
-                                ),
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  csvProvider.lastError ?? '가져오기 실패',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
+                    : () => _handleCsvImport(
+                          context,
+                          csvProvider.importReadingsFromFile,
+                          readingProvider.loadAllReadings,
+                        ),
               );
             },
           ),
@@ -272,30 +401,11 @@ class SettingsScreen extends StatelessWidget {
                     : const Icon(Icons.download),
                 onTap: csvProvider.isDownloading || csvProvider.isImporting
                     ? null
-                    : () async {
-                        final success = await csvProvider.importBooksAuto();
-                        if (context.mounted) {
-                          if (success) {
-                            await booksProvider.loadAllBooks();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${csvProvider.importedCount}개 항목이 가져와졌습니다',
-                                ),
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  csvProvider.lastError ?? '가져오기 실패',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
+                    : () => _handleCsvImport(
+                          context,
+                          csvProvider.importBooksAuto,
+                          booksProvider.loadAllBooks,
+                        ),
               );
             },
           ),
@@ -316,32 +426,43 @@ class SettingsScreen extends StatelessWidget {
                     : const Icon(Icons.file_open),
                 onTap: csvProvider.isImporting
                     ? null
-                    : () async {
-                        final success = await csvProvider.importBooksFromFile();
-                        if (context.mounted) {
-                          if (success) {
-                            await booksProvider.loadAllBooks();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${csvProvider.importedCount}개 항목이 가져와졌습니다',
-                                ),
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  csvProvider.lastError ?? '가져오기 실패',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      },
+                    : () => _handleCsvImport(
+                          context,
+                          csvProvider.importBooksFromFile,
+                          booksProvider.loadAllBooks,
+                        ),
               );
             },
+          ),
+
+          const Divider(height: 32),
+
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text(
+              '🗑️ 데이터 초기화',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.refresh, color: Colors.orange),
+            title: const Text('읽기 기록 초기화'),
+            subtitle: const Text('완료 표시와 묵상 노트 삭제'),
+            trailing: const Icon(Icons.arrow_forward_ios),
+            onTap: () => _resetReadingHistory(context),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.delete_forever, color: Colors.red),
+            title: const Text('모든 데이터 초기화'),
+            subtitle: const Text('모든 데이터를 삭제하고 처음부터 시작'),
+            trailing: const Icon(Icons.arrow_forward_ios),
+            onTap: () => _resetAllData(context),
           ),
 
           const Divider(height: 32),
@@ -486,6 +607,11 @@ class SettingsScreen extends StatelessWidget {
                           style:
                               TextStyle(fontFamily: 'monospace', fontSize: 12),
                         ),
+                        SizedBox(height: 15),
+                        Text(
+                          '※ CSV 가져오기 시 기존 데이터는 자동으로 업데이트됩니다.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
                       ],
                     ),
                   ),
@@ -499,6 +625,8 @@ class SettingsScreen extends StatelessWidget {
               );
             },
           ),
+
+          const SizedBox(height: 20),
         ],
       ),
     );
