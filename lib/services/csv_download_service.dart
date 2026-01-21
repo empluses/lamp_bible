@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
 class CsvDownloadService {
-  static const String baseUrl = 'https://lamp.empluses.com/csv/';
+  static const String baseUrl = 'https://lampworker.empluses.com/csv/';
   static const String dailyReadingFileName = 'daily_readings.csv';
   static const String bibleBooksFileName = 'bible_books.csv';
 

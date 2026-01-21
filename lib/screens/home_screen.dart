@@ -266,35 +266,58 @@ class _HomeScreenState extends State<HomeScreen>
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              _buildStatCard(
-                                                context,
-                                                '✅',
-                                                l10n.completed,
-                                                l10n.days(completedDays),
-                                                Colors.green,
-                                                isDark,
-                                                isSmallScreen,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              _buildStatCard(
-                                                context,
-                                                '⏳',
-                                                l10n.remaining,
-                                                l10n.days(uncompletedDays),
-                                                Colors.orange,
-                                                isDark,
-                                                isSmallScreen,
-                                              ),
-                                              const SizedBox(height: 8),
-                                              _buildStatCard(
-                                                context,
-                                                '🔥',
-                                                l10n.streak,
-                                                l10n.days(streakDays),
-                                                Colors.red,
-                                                isDark,
-                                                isSmallScreen,
-                                              ),
+                                              if (isSmallScreen) ...[
+                                                _buildCompactStat(
+                                                  '✅',
+                                                  l10n.days(completedDays),
+                                                  Colors.green,
+                                                  isDark,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                _buildCompactStat(
+                                                  '⏳',
+                                                  l10n.days(uncompletedDays),
+                                                  Colors.orange,
+                                                  isDark,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                _buildCompactStat(
+                                                  '🔥',
+                                                  l10n.days(streakDays),
+                                                  Colors.red,
+                                                  isDark,
+                                                ),
+                                              ] else ...[
+                                                _buildStatCard(
+                                                  context,
+                                                  '✅',
+                                                  l10n.completed,
+                                                  l10n.days(completedDays),
+                                                  Colors.green,
+                                                  isDark,
+                                                  isSmallScreen,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                _buildStatCard(
+                                                  context,
+                                                  '⏳',
+                                                  l10n.remaining,
+                                                  l10n.days(uncompletedDays),
+                                                  Colors.orange,
+                                                  isDark,
+                                                  isSmallScreen,
+                                                ),
+                                                const SizedBox(height: 8),
+                                                _buildStatCard(
+                                                  context,
+                                                  '🔥',
+                                                  l10n.streak,
+                                                  l10n.days(streakDays),
+                                                  Colors.red,
+                                                  isDark,
+                                                  isSmallScreen,
+                                                ),
+                                              ],
                                             ],
                                           ),
                                         ),
@@ -481,6 +504,40 @@ class _HomeScreenState extends State<HomeScreen>
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactStat(
+    String icon,
+    String value,
+    Color color,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(isDark ? 0.18 : 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: color.withOpacity(0.25),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(icon, style: const TextStyle(fontSize: 18)),
+          const SizedBox(width: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
           ),
         ],

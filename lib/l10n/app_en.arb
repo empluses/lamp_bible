@@ -80,6 +80,12 @@
   "myMemo": "My Memo",
   "memoHint": "Write notes about this book",
   "dataUpdate": "📥 Data Update",
+  "dailyReadingUrlAuto": "Daily Reading URL (Auto)",
+  "dailyReadingUrlManual": "Daily Reading URL (Manual)",
+  "bibleOverviewUrlAuto": "Bible Overview URL (Auto)",
+  "bibleOverviewUrlManual": "Bible Overview URL (Manual)",
+  "urlDownloadOrLocal": "Download URL or local file",
+  "selectFile": "Select file",
   "dailyReadingUrl": "Daily Reading URLs",
   "bibleOverviewUrl": "Bible Overview URLs",
   "importFromCsv": "Import from CSV",
@@ -96,6 +102,13 @@
       "error": {"type": "String"}
     }
   },
+  "csvUpdateSuccess": "{count} items updated",
+  "@csvUpdateSuccess": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "unknownError": "Unknown error",
   "yearSettings": "🗓️ Year Settings",
   "currentYear": "Current Year",
   "selectYear": "Select Year",
@@ -107,12 +120,46 @@
   },
   "statistics": "📊 Statistics",
   "completionRate": "Annual Completion Rate",
+  "completionStatus": "{completed} days / {percent}%",
+  "@completionStatus": {
+    "placeholders": {
+      "completed": {"type": "int"},
+      "percent": {"type": "String"}
+    }
+  },
+  "dataResetSection": "🗑️ Data Reset",
+  "resetReadingHistoryTitle": "Reset Reading History",
+  "resetReadingHistorySubtitle": "Clear completion marks and notes",
+  "resetReadingHistoryMessage": "All completion marks and notes will be deleted.\nBible URLs and book info will remain.",
+  "resetReadingHistorySuccess": "Reading history has been reset",
+  "resetReadingHistoryFailed": "Reset failed: {error}",
+  "@resetReadingHistoryFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "resetAllDataTitle": "Reset All Data",
+  "resetAllDataSubtitle": "Delete everything and start fresh",
+  "resetAllDataMessage": "All reading data, book info, history, and notes will be deleted.\nThis action cannot be undone.",
+  "resetAllDataSuccess": "All data has been reset",
+  "resetAllDataFailed": "Reset failed: {error}",
+  "@resetAllDataFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
   "appInfo": "ℹ️ App Info",
   "version": "Version",
+  "appVersionValue": "1.0.0",
+  "copyrightTitle": "Copyright",
+  "copyrightValue": "EM Plus",
   "csvFormat": "CSV Format Guide",
   "csvFormatTitle": "CSV File Format",
   "csvFormatDaily": "Daily Reading CSV:",
+  "csvFormatDailyColumns": "month,day,youtube_url,title,chapter_info,is_special",
   "csvFormatBooks": "Bible Books CSV:",
+  "csvFormatBooksColumns": "book_number,testament,korean_name,english_name,youtube_url,author,chapters_count,summary",
+  "csvImportNotice": "※ Existing data is automatically updated when importing CSV.",
   "close": "Close",
   "encouragement0": "Starting is half the battle!",
   "encouragement20": "Keep it up!",

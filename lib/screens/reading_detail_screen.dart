@@ -213,40 +213,34 @@ class _ReadingDetailScreenState extends State<ReadingDetailScreen> {
                         width: double.infinity,
                         padding: EdgeInsets.all(screenWidth * 0.05),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: widget.reading!.isSpecial
-                                ? [
-                                    Colors.purple.shade400,
-                                    Colors.purple.shade600
-                                  ]
-                                : [Colors.blue.shade400, Colors.blue.shade600],
-                          ),
+                          color: isDark ? Colors.grey.shade900 : Colors.white,
                           borderRadius: BorderRadius.circular(24),
                           boxShadow: [
                             BoxShadow(
-                              color: widget.reading!.isSpecial
-                                  ? Colors.purple.withOpacity(0.4)
-                                  : Colors.blue.withOpacity(0.4),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
+                              color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
                             ),
                           ],
+                          border: Border.all(
+                            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                            width: 1,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               widget.reading!.isSpecial ? '🎵' : '📖',
-                              style:
-                                  TextStyle(fontSize: isSmallScreen ? 32 : 40),
+                              style: TextStyle(fontSize: isSmallScreen ? 28 : 36),
                             ),
                             SizedBox(height: isSmallScreen ? 8 : 12),
                             Text(
                               widget.reading!.title,
                               style: TextStyle(
-                                fontSize: isSmallScreen ? 20 : 26,
+                                fontSize: isSmallScreen ? 20 : 24,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: Theme.of(context).textTheme.bodyLarge?.color,
                               ),
                             ),
                             if (widget.reading!.chapterInfo != null) ...[
@@ -254,8 +248,10 @@ class _ReadingDetailScreenState extends State<ReadingDetailScreen> {
                               Text(
                                 widget.reading!.chapterInfo!,
                                 style: TextStyle(
-                                  fontSize: isSmallScreen ? 14 : 16,
-                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: isSmallScreen ? 13 : 15,
+                                  color: isDark
+                                      ? Colors.grey.shade400
+                                      : Colors.grey.shade600,
                                 ),
                               ),
                             ],
@@ -267,13 +263,11 @@ class _ReadingDetailScreenState extends State<ReadingDetailScreen> {
                       // YouTube 재생 버튼
                       Container(
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF0000), Color(0xFFCC0000)],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(18),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.red.withOpacity(0.4),
+                              color: Colors.red.withOpacity(0.25),
                               blurRadius: 12,
                               offset: const Offset(0, 6),
                             ),
@@ -283,7 +277,7 @@ class _ReadingDetailScreenState extends State<ReadingDetailScreen> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: _launchYouTube,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(18),
                             child: Padding(
                               padding: EdgeInsets.symmetric(
                                 vertical: isSmallScreen ? 14 : 18,
@@ -322,10 +316,19 @@ class _ReadingDetailScreenState extends State<ReadingDetailScreen> {
                         width: double.infinity,
                         padding: EdgeInsets.all(screenWidth * 0.08),
                         decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade200,
+                          color: isDark ? Colors.grey.shade900 : Colors.white,
                           borderRadius: BorderRadius.circular(24),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                            width: 1,
+                          ),
                         ),
                         child: Column(
                           children: [
@@ -353,9 +356,10 @@ class _ReadingDetailScreenState extends State<ReadingDetailScreen> {
                     Text(
                       '✍️ ${l10n.myNotes}',
                       style: TextStyle(
-                        fontSize: isSmallScreen ? 18 : 22,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                        fontSize: isSmallScreen ? 14 : 16,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+                        letterSpacing: 0.2,
                       ),
                     ),
                     SizedBox(height: screenHeight * 0.02),
@@ -366,11 +370,15 @@ class _ReadingDetailScreenState extends State<ReadingDetailScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
                           ),
                         ],
+                        border: Border.all(
+                          color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                          width: 1,
+                        ),
                       ),
                       child: Column(
                         children: [

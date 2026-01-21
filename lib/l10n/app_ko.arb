@@ -1,7 +1,7 @@
 {
   "@@locale": "ko",
-  "appTitle": "함께 성경 읽기",
-  "homeTitle": "함께 성경 읽기",
+  "appTitle": "공동체 성경 읽기",
+  "homeTitle": "공동체 성경 읽기",
   "yearlyReading": "🗓️ {year}년 성경 통독",
   "progressStatus": "📊 진행 현황",
   "completed": "완료",
@@ -39,24 +39,88 @@
   "myMemo": "나의 메모",
   "memoHint": "이 성경책에 대한 메모를 작성해보세요",
   "dataUpdate": "📥 데이터 업데이트",
+  "dailyReadingUrlAuto": "매일 읽기 URL (자동)",
+  "dailyReadingUrlManual": "매일 읽기 URL (수동)",
+  "bibleOverviewUrlAuto": "성경 개요 URL (자동)",
+  "bibleOverviewUrlManual": "성경 개요 URL (수동)",
+  "urlDownloadOrLocal": "URL 다운로드 또는 로컬 파일",
+  "selectFile": "파일 선택",
   "dailyReadingUrl": "매일 읽기 URL",
   "bibleOverviewUrl": "성경 개요 URL",
   "importFromCsv": "CSV 파일에서 가져오기",
   "importing": "가져오는 중...",
   "importSuccess": "{count}개 항목이 가져와졌습니다",
   "importFailed": "가져오기 실패: {error}",
+  "csvUpdateSuccess": "{count}개 항목이 업데이트되었습니다",
+  "@csvUpdateSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "@importFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownError": "알 수 없는 오류",
   "yearSettings": "🗓️ 년도 설정",
   "currentYear": "현재 년도",
   "selectYear": "년도 선택",
   "yearChanged": "{year}년으로 변경되었습니다",
   "statistics": "📊 통계",
   "completionRate": "연간 완독률",
+  "completionStatus": "{completed}일 완료 / {percent}%",
+  "@completionStatus": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "dataResetSection": "🗑️ 데이터 초기화",
+  "resetReadingHistoryTitle": "읽기 기록 초기화",
+  "resetReadingHistorySubtitle": "완료 표시와 묵상 노트 삭제",
+  "resetReadingHistoryMessage": "모든 완료 표시와 묵상 노트가 삭제됩니다.\n성경 읽기 URL과 성경책 정보는 유지됩니다.",
+  "resetReadingHistorySuccess": "읽기 기록이 초기화되었습니다",
+  "resetReadingHistoryFailed": "초기화 실패: {error}",
+  "@resetReadingHistoryFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "resetAllDataTitle": "모든 데이터 초기화",
+  "resetAllDataSubtitle": "모든 데이터를 삭제하고 처음부터 시작",
+  "resetAllDataMessage": "모든 성경 읽기 데이터, 성경책 정보, 읽기 기록, 메모가 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.",
+  "resetAllDataSuccess": "모든 데이터가 초기화되었습니다",
+  "resetAllDataFailed": "초기화 실패: {error}",
+  "@resetAllDataFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "appInfo": "ℹ️ 앱 정보",
   "version": "버전",
+  "appVersionValue": "1.0.0",
+  "copyrightTitle": "저작권",
+  "copyrightValue": "EM Plus",
   "csvFormat": "CSV 형식 안내",
   "csvFormatTitle": "CSV 파일 형식",
   "csvFormatDaily": "매일 읽기 CSV:",
+  "csvFormatDailyColumns": "month,day,youtube_url,title,chapter_info,is_special",
   "csvFormatBooks": "성경 66권 CSV:",
+  "csvFormatBooksColumns": "book_number,testament,korean_name,english_name,youtube_url,author,chapters_count,summary",
+  "csvImportNotice": "※ CSV 가져오기 시 기존 데이터는 자동으로 업데이트됩니다.",
   "close": "확인",
   "encouragement0": "시작이 반입니다!",
   "encouragement20": "힘내세요!",

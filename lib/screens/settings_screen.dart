@@ -182,10 +182,11 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Future<void> _resetAllData(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     _showResetConfirmDialog(
       context,
-      '모든 데이터 초기화',
-      '모든 성경 읽기 데이터, 성경책 정보, 읽기 기록, 메모가 삭제됩니다.\n이 작업은 되돌릴 수 없습니다.',
+      l10n.resetAllDataTitle,
+      l10n.resetAllDataMessage,
       () async {
         try {
           final db = await DatabaseHelper.instance.database;
@@ -204,12 +205,12 @@ class SettingsScreen extends StatelessWidget {
                 );
 
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text('모든 데이터가 초기화되었습니다'),
+                    const Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(l10n.resetAllDataSuccess),
                   ],
                 ),
                 backgroundColor: Colors.green,
@@ -220,7 +221,7 @@ class SettingsScreen extends StatelessWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('초기화 실패: $e'),
+                content: Text(l10n.resetAllDataFailed(e.toString())),
                 backgroundColor: Colors.red,
               ),
             );
@@ -231,10 +232,11 @@ class SettingsScreen extends StatelessWidget {
   }
 
   Future<void> _resetReadingHistory(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     _showResetConfirmDialog(
       context,
-      '읽기 기록 초기화',
-      '모든 완료 표시와 묵상 노트가 삭제됩니다.\n성경 읽기 URL과 성경책 정보는 유지됩니다.',
+      l10n.resetReadingHistoryTitle,
+      l10n.resetReadingHistoryMessage,
       () async {
         try {
           final db = await DatabaseHelper.instance.database;
@@ -248,12 +250,12 @@ class SettingsScreen extends StatelessWidget {
                 );
 
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Row(
                   children: [
-                    Icon(Icons.check_circle, color: Colors.white),
-                    SizedBox(width: 8),
-                    Text('읽기 기록이 초기화되었습니다'),
+                    const Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(l10n.resetReadingHistorySuccess),
                   ],
                 ),
                 backgroundColor: Colors.green,
@@ -264,7 +266,7 @@ class SettingsScreen extends StatelessWidget {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('초기화 실패: $e'),
+                content: Text(l10n.resetReadingHistoryFailed(e.toString())),
                 backgroundColor: Colors.red,
               ),
             );
@@ -279,6 +281,7 @@ class SettingsScreen extends StatelessWidget {
     Future<bool> Function() importFunction,
     Function refreshFunction,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final success = await importFunction();
     if (context.mounted) {
       if (success) {
@@ -290,7 +293,9 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 8),
-                Text('${csvProvider.importedCount}개 항목이 업데이트되었습니다'),
+                Text(
+                  l10n.csvUpdateSuccess(csvProvider.importedCount),
+                ),
               ],
             ),
             backgroundColor: Colors.green,
@@ -298,9 +303,10 @@ class SettingsScreen extends StatelessWidget {
         );
       } else {
         final csvProvider = context.read<CsvImportProvider>();
+        final errorMessage = csvProvider.lastError ?? l10n.unknownError;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(csvProvider.lastError ?? '가져오기 실패'),
+            content: Text(l10n.importFailed(errorMessage)),
             backgroundColor: Colors.red,
           ),
         );
@@ -308,14 +314,14 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
-  String _getThemeModeText(ThemeMode mode) {
+  String _getThemeModeText(ThemeMode mode, AppLocalizations l10n) {
     switch (mode) {
       case ThemeMode.light:
-        return '라이트 모드';
+        return l10n.lightTheme;
       case ThemeMode.dark:
-        return '다크 모드';
+        return l10n.darkTheme;
       case ThemeMode.system:
-        return '시스템 기본값';
+        return l10n.systemTheme;
     }
   }
 
@@ -331,312 +337,264 @@ class SettingsScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
       ),
       body: ListView(
-        padding: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              '📥 데이터 업데이트',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+          _buildSection(
+            context,
+            title: l10n.dataUpdate,
+            children: [
+              Consumer2<CsvImportProvider, BibleReadingProvider>(
+                builder: (context, csvProvider, readingProvider, child) {
+                  return ListTile(
+                    leading:
+                        const Icon(Icons.cloud_download, color: Colors.blue),
+                    title: Text(l10n.dailyReadingUrlAuto),
+                    subtitle: Text(l10n.urlDownloadOrLocal),
+                    trailing: csvProvider.isDownloading ||
+                            csvProvider.isImporting
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download),
+                    onTap: csvProvider.isDownloading || csvProvider.isImporting
+                        ? null
+                        : () => _handleCsvImport(
+                              context,
+                              csvProvider.importReadingsAuto,
+                              readingProvider.loadAllReadings,
+                            ),
+                  );
+                },
               ),
-            ),
-          ),
-
-          // 매일 읽기 URL 가져오기 (자동)
-          Consumer2<CsvImportProvider, BibleReadingProvider>(
-            builder: (context, csvProvider, readingProvider, child) {
-              return ListTile(
-                leading: const Icon(Icons.cloud_download, color: Colors.blue),
-                title: const Text('매일 읽기 URL (자동)'),
-                subtitle: const Text('URL 다운로드 또는 로컬 파일'),
-                trailing: csvProvider.isDownloading || csvProvider.isImporting
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download),
-                onTap: csvProvider.isDownloading || csvProvider.isImporting
-                    ? null
-                    : () => _handleCsvImport(
-                          context,
-                          csvProvider.importReadingsAuto,
-                          readingProvider.loadAllReadings,
-                        ),
-              );
-            },
-          ),
-
-          // 매일 읽기 URL 가져오기 (수동)
-          Consumer2<CsvImportProvider, BibleReadingProvider>(
-            builder: (context, csvProvider, readingProvider, child) {
-              return ListTile(
-                leading: const Icon(Icons.folder_open, color: Colors.blue),
-                title: const Text('매일 읽기 URL (수동)'),
-                subtitle: const Text('파일 선택'),
-                trailing: csvProvider.isImporting
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.file_open),
-                onTap: csvProvider.isImporting
-                    ? null
-                    : () => _handleCsvImport(
-                          context,
-                          csvProvider.importReadingsFromFile,
-                          readingProvider.loadAllReadings,
-                        ),
-              );
-            },
-          ),
-
-          // 성경 개요 URL 가져오기 (자동)
-          Consumer2<CsvImportProvider, BibleBooksProvider>(
-            builder: (context, csvProvider, booksProvider, child) {
-              return ListTile(
-                leading: const Icon(Icons.cloud_download, color: Colors.green),
-                title: const Text('성경 개요 URL (자동)'),
-                subtitle: const Text('URL 다운로드 또는 로컬 파일'),
-                trailing: csvProvider.isDownloading || csvProvider.isImporting
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download),
-                onTap: csvProvider.isDownloading || csvProvider.isImporting
-                    ? null
-                    : () => _handleCsvImport(
-                          context,
-                          csvProvider.importBooksAuto,
-                          booksProvider.loadAllBooks,
-                        ),
-              );
-            },
-          ),
-
-          // 성경 개요 URL 가져오기 (수동)
-          Consumer2<CsvImportProvider, BibleBooksProvider>(
-            builder: (context, csvProvider, booksProvider, child) {
-              return ListTile(
-                leading: const Icon(Icons.folder_open, color: Colors.green),
-                title: const Text('성경 개요 URL (수동)'),
-                subtitle: const Text('파일 선택'),
-                trailing: csvProvider.isImporting
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.file_open),
-                onTap: csvProvider.isImporting
-                    ? null
-                    : () => _handleCsvImport(
-                          context,
-                          csvProvider.importBooksFromFile,
-                          booksProvider.loadAllBooks,
-                        ),
-              );
-            },
-          ),
-
-          const Divider(height: 32),
-
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              '🗑️ 데이터 초기화',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+              Consumer2<CsvImportProvider, BibleReadingProvider>(
+                builder: (context, csvProvider, readingProvider, child) {
+                  return ListTile(
+                    leading: const Icon(Icons.folder_open, color: Colors.blue),
+                    title: Text(l10n.dailyReadingUrlManual),
+                    subtitle: Text(l10n.selectFile),
+                    trailing: csvProvider.isImporting
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.file_open),
+                    onTap: csvProvider.isImporting
+                        ? null
+                        : () => _handleCsvImport(
+                              context,
+                              csvProvider.importReadingsFromFile,
+                              readingProvider.loadAllReadings,
+                            ),
+                  );
+                },
               ),
-            ),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.refresh, color: Colors.orange),
-            title: const Text('읽기 기록 초기화'),
-            subtitle: const Text('완료 표시와 묵상 노트 삭제'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () => _resetReadingHistory(context),
-          ),
-
-          ListTile(
-            leading: const Icon(Icons.delete_forever, color: Colors.red),
-            title: const Text('모든 데이터 초기화'),
-            subtitle: const Text('모든 데이터를 삭제하고 처음부터 시작'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () => _resetAllData(context),
-          ),
-
-          const Divider(height: 32),
-
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              '🎨 테마 설정',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+              Consumer2<CsvImportProvider, BibleBooksProvider>(
+                builder: (context, csvProvider, booksProvider, child) {
+                  return ListTile(
+                    leading:
+                        const Icon(Icons.cloud_download, color: Colors.green),
+                    title: Text(l10n.bibleOverviewUrlAuto),
+                    subtitle: Text(l10n.urlDownloadOrLocal),
+                    trailing: csvProvider.isDownloading ||
+                            csvProvider.isImporting
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download),
+                    onTap: csvProvider.isDownloading || csvProvider.isImporting
+                        ? null
+                        : () => _handleCsvImport(
+                              context,
+                              csvProvider.importBooksAuto,
+                              booksProvider.loadAllBooks,
+                            ),
+                  );
+                },
               ),
-            ),
-          ),
-
-          Consumer<ThemeProvider>(
-            builder: (context, themeProvider, child) {
-              return ListTile(
-                leading: const Icon(Icons.palette, color: Colors.purple),
-                title: const Text('테마 모드'),
-                subtitle: Text(_getThemeModeText(themeProvider.themeMode)),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => _showThemeDialog(context),
-              );
-            },
-          ),
-
-          const Divider(height: 32),
-
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              '🗓️ 년도 설정',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+              Consumer2<CsvImportProvider, BibleBooksProvider>(
+                builder: (context, csvProvider, booksProvider, child) {
+                  return ListTile(
+                    leading: const Icon(Icons.folder_open, color: Colors.green),
+                    title: Text(l10n.bibleOverviewUrlManual),
+                    subtitle: Text(l10n.selectFile),
+                    trailing: csvProvider.isImporting
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.file_open),
+                    onTap: csvProvider.isImporting
+                        ? null
+                        : () => _handleCsvImport(
+                              context,
+                              csvProvider.importBooksFromFile,
+                              booksProvider.loadAllBooks,
+                            ),
+                  );
+                },
               ),
-            ),
+            ],
           ),
-
-          Consumer<ReadingHistoryProvider>(
-            builder: (context, provider, child) {
-              return ListTile(
-                leading: const Icon(Icons.calendar_month, color: Colors.orange),
-                title: const Text('현재 년도'),
-                subtitle: Text('${provider.currentYear}년'),
-                trailing: const Icon(Icons.arrow_forward_ios),
-                onTap: () => _showYearPicker(context),
-              );
-            },
-          ),
-
-          const Divider(height: 32),
-
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              '📊 통계',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+          _buildSection(
+            context,
+            title: l10n.dataResetSection,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.refresh, color: Colors.orange),
+                title: Text(l10n.resetReadingHistoryTitle),
+                subtitle: Text(l10n.resetReadingHistorySubtitle),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => _resetReadingHistory(context),
               ),
-            ),
-          ),
-
-          Consumer<ReadingHistoryProvider>(
-            builder: (context, provider, child) {
-              final year = provider.currentYear;
-              final completed = provider.getCompletedCount(year);
-              final progress = provider.getProgressPercentage(year);
-
-              return ListTile(
-                leading: const Icon(Icons.show_chart, color: Colors.purple),
-                title: const Text('연간 완독률'),
-                subtitle:
-                    Text('$completed일 완료 / ${progress.toStringAsFixed(1)}%'),
-                trailing: Text(
-                  '${progress.toStringAsFixed(0)}%',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              );
-            },
-          ),
-
-          const Divider(height: 32),
-
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'ℹ️ 앱 정보',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+              ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: Text(l10n.resetAllDataTitle),
+                subtitle: Text(l10n.resetAllDataSubtitle),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () => _resetAllData(context),
               ),
-            ),
+            ],
           ),
-
-          const ListTile(
-            leading: Icon(Icons.info, color: Colors.blue),
-            title: Text('버전'),
-            subtitle: Text('1.0.0'),
+          _buildSection(
+            context,
+            title: l10n.themeSettings,
+            children: [
+              Consumer<ThemeProvider>(
+                builder: (context, themeProvider, child) {
+                  return ListTile(
+                    leading: const Icon(Icons.palette, color: Colors.purple),
+                    title: Text(l10n.themeMode),
+                    subtitle:
+                        Text(_getThemeModeText(themeProvider.themeMode, l10n)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => _showThemeDialog(context),
+                  );
+                },
+              ),
+              Consumer<ReadingHistoryProvider>(
+                builder: (context, provider, child) {
+                  return ListTile(
+                    leading:
+                        const Icon(Icons.calendar_month, color: Colors.orange),
+                    title: Text(l10n.currentYear),
+                    subtitle: Text(l10n.year(provider.currentYear)),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => _showYearPicker(context),
+                  );
+                },
+              ),
+            ],
           ),
+          _buildSection(
+            context,
+            title: l10n.statistics,
+            children: [
+              Consumer<ReadingHistoryProvider>(
+                builder: (context, provider, child) {
+                  final year = provider.currentYear;
+                  final completed = provider.getCompletedCount(year);
+                  final progress = provider.getProgressPercentage(year);
 
-          ListTile(
-            leading: const Icon(Icons.description, color: Colors.green),
-            title: const Text('CSV 형식 안내'),
-            onTap: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('CSV 파일 형식'),
-                  content: const SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          '매일 읽기 CSV:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                  return ListTile(
+                    leading: const Icon(Icons.show_chart, color: Colors.purple),
+                    title: Text(l10n.completionRate),
+                    subtitle: Text(
+                      l10n.completionStatus(
+                        completed,
+                        progress.toStringAsFixed(1),
+                      ),
+                    ),
+                    trailing: Text(
+                      '${progress.toStringAsFixed(0)}%',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+          _buildSection(
+            context,
+            title: l10n.appInfo,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.info, color: Colors.blue),
+                title: Text(l10n.version),
+                subtitle: Text(l10n.appVersionValue),
+              ),
+              ListTile(
+                leading: const Icon(Icons.copyright, color: Colors.blueGrey),
+                title: Text(l10n.copyrightTitle),
+                subtitle: Text(l10n.copyrightValue),
+              ),
+              ListTile(
+                leading: const Icon(Icons.description, color: Colors.green),
+                title: Text(l10n.csvFormat),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text(l10n.csvFormatTitle),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              l10n.csvFormatDaily,
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              l10n.csvFormatDailyColumns,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                              ),
+                            ),
+                            SizedBox(height: 15),
+                            Text(
+                              l10n.csvFormatBooks,
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              l10n.csvFormatBooksColumns,
+                              style: TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 12,
+                              ),
+                            ),
+                            SizedBox(height: 15),
+                            Text(
+                              l10n.csvImportNotice,
+                              style:
+                                  TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 5),
-                        Text(
-                          'month,day,youtube_url,title,chapter_info,is_special',
-                          style:
-                              TextStyle(fontFamily: 'monospace', fontSize: 12),
-                        ),
-                        SizedBox(height: 15),
-                        Text(
-                          '성경 66권 CSV:',
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 5),
-                        Text(
-                          'book_number,testament,korean_name,english_name,youtube_url,author,chapters_count,summary',
-                          style:
-                              TextStyle(fontFamily: 'monospace', fontSize: 12),
-                        ),
-                        SizedBox(height: 15),
-                        Text(
-                          '※ CSV 가져오기 시 기존 데이터는 자동으로 업데이트됩니다.',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(l10n.close),
                         ),
                       ],
                     ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('확인'),
-                    ),
-                  ],
-                ),
-              );
-            },
+                  );
+                },
+              ),
+            ],
           ),
-
-          const SizedBox(height: 20),
         ],
       ),
       bottomNavigationBar: SafeArea(
@@ -691,5 +649,65 @@ class SettingsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildSection(
+    BuildContext context, {
+    required String title,
+    required List<Widget> children,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dividerColor = isDark ? Colors.grey.shade800 : Colors.grey.shade200;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+              letterSpacing: 0.2,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.grey.shade900 : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+            border: Border.all(
+              color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: _buildDividedTiles(children, dividerColor),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _buildDividedTiles(
+    List<Widget> tiles,
+    Color dividerColor,
+  ) {
+    final items = <Widget>[];
+    for (var i = 0; i < tiles.length; i++) {
+      items.add(tiles[i]);
+      if (i < tiles.length - 1) {
+        items.add(Divider(height: 1, color: dividerColor));
+      }
+    }
+    return items;
   }
 }

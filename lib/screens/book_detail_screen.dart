@@ -125,9 +125,25 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 기본 정보
-              Center(
+            children: [            // 기본 정보
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.grey.shade900 : Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                border: Border.all(
+                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+              child: Center(
                 child: Column(
                   children: [
                     CircleAvatar(
@@ -144,26 +160,29 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 14),
                     Text(
                       widget.book.koreanName,
-                      style: const TextStyle(
-                        fontSize: 28,
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 22 : 26,
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
                     Text(
                       '📖 ${widget.book.testament == 'OLD' ? l10n.oldTestament(widget.book.bookNumber) : l10n.newTestament(widget.book.bookNumber)} ${l10n.chapters(widget.book.chaptersCount)}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 13 : 15,
+                        color:
+                            isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
+            ),
+            const SizedBox(height: 24),
 
               // 저자 정보
               if (widget.book.author != null) ...[
@@ -185,19 +204,24 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.red,
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 24),
 
               // 요약
               if (widget.book.summary != null) ...[
                 Text(
                   '📝 ${l10n.summary}',
                   style: TextStyle(
-                    fontSize: isSmallScreen ? 18 : 22,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).textTheme.bodyLarge?.color,
+                    fontSize: isSmallScreen ? 14 : 16,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
+                    letterSpacing: 0.2,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -210,11 +234,17 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                            color:
+                                Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
                           ),
                         ],
+                        border: Border.all(
+                          color:
+                              isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                          width: 1,
+                        ),
                       ),
                       child: Padding(
                         padding: EdgeInsets.symmetric(

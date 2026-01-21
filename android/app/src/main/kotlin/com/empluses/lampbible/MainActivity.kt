@@ -1,4 +1,4 @@
-package com.example.daily_lamp
+package com.empluses.lampbible
 
 import io.flutter.embedding.android.FlutterActivity
 

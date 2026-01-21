@@ -1,6 +1,7 @@
-# daily_lamp
+# Lamp & Worker
 
-A new Flutter project.
+이 앱은 AI Agent를 사용해 구현했습니다.
+
 
 ## Getting Started
 
@@ -15,9 +16,98 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+## ■ l10n 적용 방법
+
+1. `lib/l10n/app_ko.arb`, `lib/l10n/app_en.arb`에 문자열을 추가/수정한다.
+2. 아래 명령으로 로컬라이제이션 코드를 생성한다.
+   ```bash
+   flutter gen-l10n
+   ```
+3. 코드에서 `AppLocalizations`를 사용해 문자열을 참조한다.
+   ```dart
+   final l10n = AppLocalizations.of(context)!;
+   Text(l10n.settings);
+   ```
+
+참고: `pubspec.yaml`에 `flutter: generate: true`가 설정되어 있어 빌드 시 자동 생성도 된다.
+
+## ■ assets/icon 아이콘을 iOS/Android에 적용하는 방법
+
+이 프로젝트는 `flutter_launcher_icons`를 사용한다. 현재 아이콘 경로는
+`assets/icon/app_icon.png`로 설정되어 있다.
+
+1. 아이콘 파일을 교체한다: `assets/icon/app_icon.png`
+2. 아래 명령을 실행한다.
+   ```bash
+   flutter pub get
+   flutter pub run flutter_launcher_icons
+   ```
+
+아이콘 설정은 `pubspec.yaml`의 `flutter_launcher_icons` 섹션에 있다.
+
+## ■ Play Store 등록용 Android 빌드 (AAB)
+
+1. 키스토어 생성 (최초 1회)
+   ```bash
+   keytool -genkey -v -keystore ~/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+2. `android/key.properties` 생성
+   ```
+   storePassword=비밀번호
+   keyPassword=비밀번호
+   keyAlias=upload
+   storeFile=/Users/david/upload-keystore.jks
+   ```
+3. `android/app/build.gradle`에 서명 설정 추가
+   ```gradle
+   def keystoreProperties = new Properties()
+   def keystorePropertiesFile = rootProject.file("key.properties")
+   if (keystorePropertiesFile.exists()) {
+       keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+   }
+
+   android {
+     signingConfigs {
+       release {
+         keyAlias keystoreProperties['keyAlias']
+         keyPassword keystoreProperties['keyPassword']
+         storeFile file(keystoreProperties['storeFile'])
+         storePassword keystoreProperties['storePassword']
+       }
+     }
+     buildTypes {
+       release {
+         signingConfig signingConfigs.release
+       }
+     }
+   }
+   ```
+4. AAB 빌드
+   ```bash
+   flutter clean
+   flutter pub get
+   flutter build appbundle
+   ```
+5. 결과물: `build/app/outputs/bundle/release/app-release.aab`
+
+## ■ App Store 등록용 iOS 빌드 (IPA)
+
+1. `pubspec.yaml`의 `version`(예: `1.0.0+1`)을 업데이트
+2. 릴리즈 빌드
+   ```bash
+   flutter clean
+   flutter pub get
+   flutter build ipa
+   ```
+3. Xcode로 업로드
+   - `ios/Runner.xcworkspace` 열기
+   - Signing & Capabilities에서 Team 선택
+   - `Product > Archive`
+   - Organizer에서 `Distribute App` → App Store Connect 업로드
+
 # 1년 성경 통독 Flutter 앱 - 수정된 기획 및 설계안
 
-## 📋 프로젝트 개요
+## ■ 프로젝트 개요
 
 **앱 이름 제안**: "함께 성경 읽기" 또는 "Daily Bible Reading"
 
@@ -25,7 +115,7 @@ samples, guidance on mobile development, and a full API reference.
 
 ---
 
-## 🎯 주요 기능 요구사항 (수정)
+## ■ 주요 기능 요구사항 (수정)
 
 ### 1. 핵심 기능
 - **월별 캘린더 뷰**: 실제 년월일 캘린더, 데이터는 월일(MM-DD)로 관리
@@ -38,7 +128,7 @@ samples, guidance on mobile development, and a full API reference.
 
 ---
 
-## 💾 데이터베이스 설계 (수정)
+## ■ 데이터베이스 설계 (수정)
 
 ### ERD 및 테이블 구조
 
@@ -137,9 +227,9 @@ CREATE INDEX idx_book_id ON book_notes(book_id);
 
 ---
 
-## 🎨 UI/UX 설계 (수정)
+## ■ UI/UX 설계 (수정)
 
-### 화면 구성
+### □ 화면 구성
 
 #### 1. **홈 화면** (Main Dashboard) - 변경없음
 ```
@@ -284,37 +374,46 @@ CREATE INDEX idx_book_id ON book_notes(book_id);
 
 ---
 
-## 📦 CSV 데이터 형식 (수정)
+## ■ CSV 데이터 형식 (수정)
 
 ### 1. 매일 읽기 YouTube URL CSV
 ```csv
 month,day,youtube_url,title,chapter_info,is_special
-1,1,https://youtu.be/xxxxx,신년 특별말씀,창세기 1-3장,0
-1,2,https://youtu.be/yyyyy,2일차,창세기 4-7장,0
-1,3,https://youtu.be/zzzzz,3일차,창세기 8-11장,0
+1,1,https://www.youtube.com/watch?v=uL9OMLbBjkw,창세기(Genesis),창세기 1-2,0
+1,2,https://www.youtube.com/watch?v=cYaVUSSuJWQ,창세기(Genesis),창세기 3-6,0
+1,3,https://www.youtube.com/watch?v=ESXp3sFXLW0,창세기(Genesis),창세기 7-11,0
+1,4,https://www.youtube.com/watch?v=qhXfnKkDG_Q,창세기(Genesis),창세기 12-15,0
+1,5,https://www.youtube.com/watch?v=tYrAL74dOjY,창세기(Genesis),창세기 16-18,0
+1,6,https://www.youtube.com/watch?v=cEc2_NpoDfA,창세기(Genesis),창세기 19-20,0
+1,7,https://www.youtube.com/watch?v=Z3TCzQZeX7w,창세기(Genesis),창세기 21-23,0
+1,8,https://www.youtube.com/watch?v=1L2dFllmg3w,창세기(Genesis),창세기 24-25,0
 ...
-2,28,https://youtu.be/aaaaa,59일차,출애굽기 30-32장,0
-2,29,https://youtu.be/bbbbb,윤년 특별 찬양,찬양 모음,1
-...
-12,31,https://youtu.be/ccccc,365일차,요한계시록 19-22장,0
+12,25,https://www.youtube.com/watch?v=csMDO79VfxQ,"요한1서(1 John),요한2서(2 John),요한3서(3 John),유다서(Jude)","요한1서 5,요한2서,요한3서,유다서",0
+12,26,https://www.youtube.com/watch?v=62wJOQWihaw,요한계시록(Revelation),요한계시록 1-4,0
+12,27,https://www.youtube.com/watch?v=P90JX-0GF8A,요한계시록(Revelation),요한계시록 5-8,0
+12,28,https://www.youtube.com/watch?v=PJSC5KHUO4s,요한계시록(Revelation),요한계시록 9-12,0
+12,29,https://www.youtube.com/watch?v=8vl-uG-tIoc,요한계시록(Revelation),요한계시록 13-16,0
+12,30,https://www.youtube.com/watch?v=R5CWTmDxemw,요한계시록(Revelation),요한계시록 17-19,0
+12,31,https://www.youtube.com/watch?v=U0D0y7q9EEY,요한계시록(Revelation),요한계시록 20-22,0
 ```
 
 ### 2. 성경 66권 개요 CSV (신규)
 ```csv
 book_number,testament,korean_name,english_name,youtube_url,author,chapters_count,summary
-1,OLD,창세기,Genesis,https://youtu.be/gen_overview,모세,50,천지창조와 족장들의 역사
-2,OLD,출애굽기,Exodus,https://youtu.be/exo_overview,모세,40,이스라엘의 출애굽과 율법
-3,OLD,레위기,Leviticus,https://youtu.be/lev_overview,모세,27,제사와 성결 규례
+1,OLD,구약/타나크 개요,TaNaK/Old Testament,https://www.youtube.com/watch?v=-nbwEZJSvW0,None,0,구약/타나크 개요
+2,OLD,창세기 1-11,Genesis 1-11,https://www.youtube.com/watch?v=dLv2ndgXrbo,모세,11,창세기 1-11
+3,OLD,창세기 12-50,Genesis 12-50,https://www.youtube.com/watch?v=p4Oh-rbc9rE,모세,39,창세기 12-50
+4,OLD,출애굽기 1-18,Exodus 1-18,https://www.youtube.com/watch?v=PrTbYx6KbtY,모세,18,출애굽기 1-18
+5,OLD,출애굽기 19-40,Exodus 19-40,https://www.youtube.com/watch?v=ze0bIlO5p1w,모세,22,출애굽기 19-40
 ...
-40,NEW,마태복음,Matthew,https://youtu.be/mat_overview,마태,28,예수님의 생애와 가르침
-41,NEW,마가복음,Mark,https://youtu.be/mark_overview,마가,16,예수님의 사역
-...
-66,NEW,요한계시록,Revelation,https://youtu.be/rev_overview,요한,22,종말과 새 하늘 새 땅
+71,NEW,유다서,Jude,https://www.youtube.com/watch?v=ggYH-spyKHY,유다,1,유다서
+72,NEW,요한계시록 1-11,Revelation 1-11,https://www.youtube.com/watch?v=ue4ZFykrMJ8,요한,11,요한계시록 1-11
+73,NEW,요한계시록 12-22,Revelation 12-22,https://www.youtube.com/watch?v=TV36boVNZOk,요한,11,요한계시록 12-22
 ```
 
 ---
 
-## 🗓️ 윤년 처리 로직
+## ■ 윤년 처리 로직
 
 ### Dart 코드 예제
 ```dart
@@ -365,7 +464,7 @@ class DateHelper {
 
 ---
 
-## 🔄 상태 관리 구조 (수정)
+## ■ 상태 관리 구조 (수정)
 
 ```dart
 // 주요 Provider들
@@ -433,7 +532,7 @@ class YearSelectorProvider extends ChangeNotifier {
 
 ---
 
-## 🏗️ 데이터 구조 클래스
+## ■ 데이터 구조 클래스
 
 ```dart
 class BibleReading {
@@ -497,7 +596,7 @@ class BookNote {
 
 ---
 
-## 📱 개발 단계별 로드맵 (수정)
+## ■ 개발 단계별 로드맵 (수정)
 
 ### Phase 1: 기본 인프라 (1-2주)
 - [ ] Flutter 프로젝트 초기화
@@ -542,9 +641,9 @@ class BookNote {
 
 ---
 
-## 📊 성경 66권 기본 데이터 구조
+## ■ 성경 66권 기본 데이터 구조
 
-### 구약성경 (39권)
+### □ 구약성경 (39권)
 ```
 1. 모세오경 (5권): 창세기~신명기
 2. 역사서 (12권): 여호수아~에스더
@@ -553,7 +652,7 @@ class BookNote {
 5. 소선지서 (12권): 호세아~말라기
 ```
 
-### 신약성경 (27권)
+### □ 신약성경 (27권)
 ```
 1. 복음서 (4권): 마태~요한
 2. 역사서 (1권): 사도행전
@@ -564,7 +663,7 @@ class BookNote {
 
 ---
 
-## 🎯 추가 고려사항
+## ■ 추가 고려사항
 
 ### 1. 윤년 처리 특이사항
 - **2024년**: 윤년 (366일) - 2월 29일 찬양 표시
@@ -591,7 +690,7 @@ class BookNote {
 
 ---
 
-## 💡 선택적 향상 기능 (추후 개발)
+## ■ 선택적 향상 기능 (추후 개발)
 
 1. **성경 읽기 계획**: 다양한 통독 플랜 제공
 2. **알림 기능**: 매일 정해진 시간 읽기 알림
