@@ -333,7 +333,6 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.settings),
-        centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: ListView(

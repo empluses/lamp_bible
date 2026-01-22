@@ -37,7 +37,6 @@ class _BibleBooksScreenState extends State<BibleBooksScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.bibleOverview),
-        centerTitle: true,
         automaticallyImplyLeading: false,
       ),
       body: Column(

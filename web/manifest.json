@@ -1,6 +1,6 @@
 {
-    "name": "daily_lamp",
-    "short_name": "daily_lamp",
+    "name": "lamp_bible",
+    "short_name": "lamp_bible",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

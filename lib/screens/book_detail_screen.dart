@@ -110,128 +110,49 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final backLabel = MaterialLocalizations.of(context).backButtonTooltip;
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final isSmallScreen = screenWidth < 360;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.book.koreanName),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
-      ),
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         behavior: HitTestBehavior.translucent,
-        child: SingleChildScrollView(
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [            // 기본 정보
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              decoration: BoxDecoration(
-                color: isDark ? Colors.grey.shade900 : Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: screenHeight * 0.12,
+              floating: false,
+              pinned: true,
+              elevation: 0,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                title: FittedBox(
+                  child: Text(
+                    l10n.bookDetail,
+                    style: TextStyle(
+                      fontSize: isSmallScreen ? 18 : 20,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
                   ),
-                ],
-                border: Border.all(
-                  color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                  width: 1,
                 ),
-              ),
-              child: Center(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundColor: widget.book.testament == 'OLD'
-                          ? Colors.blue
-                          : Colors.red,
-                      child: Text(
-                        '${widget.book.bookNumber}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      widget.book.koreanName,
-                      style: TextStyle(
-                        fontSize: isSmallScreen ? 22 : 26,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).textTheme.bodyLarge?.color,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '📖 ${widget.book.testament == 'OLD' ? l10n.oldTestament(widget.book.bookNumber) : l10n.newTestament(widget.book.bookNumber)} ${l10n.chapters(widget.book.chaptersCount)}',
-                      style: TextStyle(
-                        fontSize: isSmallScreen ? 13 : 15,
-                        color:
-                            isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
+                centerTitle: true,
               ),
             ),
-            const SizedBox(height: 24),
-
-              // 저자 정보
-              if (widget.book.author != null) ...[
-                _buildInfoRow('✍️ ${l10n.author}', widget.book.author!),
-                const SizedBox(height: 15),
-              ],
-
-              // YouTube 버튼
-              SizedBox(
-                width: double.infinity,
-                height: 60,
-                child: ElevatedButton.icon(
-                  onPressed: _launchYouTube,
-                  icon: const Icon(Icons.play_circle_filled, size: 30),
-                  label: Text(
-                    l10n.viewOverview,
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // 요약
-              if (widget.book.summary != null) ...[
-                Text(
-                  '📝 ${l10n.summary}',
-                  style: TextStyle(
-                    fontSize: isSmallScreen ? 14 : 16,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.grey.shade300 : Colors.grey.shade600,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: SizedBox(
-                    width: screenWidth * 0.9,
-                    child: Container(
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 36),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 기본 정보
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 20),
                       decoration: BoxDecoration(
                         color: isDark ? Colors.grey.shade900 : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
                             color:
@@ -241,86 +162,208 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                           ),
                         ],
                         border: Border.all(
-                          color:
-                              isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                          color: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade200,
                           width: 1,
                         ),
                       ),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.04,
-                          vertical: 16,
-                        ),
-                        child: Text(
-                          widget.book.summary!,
-                          style: TextStyle(
-                            fontSize: isSmallScreen ? 14 : 16,
-                            height: 1.5,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 40,
+                              backgroundColor: widget.book.testament == 'OLD'
+                                  ? Colors.blue
+                                  : Colors.red,
+                              child: Text(
+                                '${widget.book.bookNumber}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              widget.book.koreanName,
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 22 : 26,
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context)
+                                    .textTheme
+                                    .bodyLarge
+                                    ?.color,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '📖 ${widget.book.testament == 'OLD' ? l10n.oldTestament(widget.book.bookNumber) : l10n.newTestament(widget.book.bookNumber)} ${l10n.chapters(widget.book.chaptersCount)}',
+                              style: TextStyle(
+                                fontSize: isSmallScreen ? 13 : 15,
+                                color: isDark
+                                    ? Colors.grey.shade400
+                                    : Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 28),
-              ],
+                    const SizedBox(height: 24),
 
-              // 나의 메모
-              Text(
-                '✍️ ${l10n.myMemo}',
-                style: TextStyle(
-                  fontSize: isSmallScreen ? 18 : 22,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-              ),
-              const SizedBox(height: 12),
+                    // 저자 정보
+                    if (widget.book.author != null) ...[
+                      _buildInfoRow('✍️ ${l10n.author}', widget.book.author!),
+                      const SizedBox(height: 15),
+                    ],
 
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.grey.shade800 : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                    // YouTube 버튼
+                    SizedBox(
+                      width: double.infinity,
+                      height: 60,
+                      child: ElevatedButton.icon(
+                        onPressed: _launchYouTube,
+                        icon: const Icon(Icons.play_circle_filled, size: 30),
+                        label: Text(
+                          l10n.viewOverview,
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                      ),
                     ),
+                    const SizedBox(height: 24),
+
+                    // 요약
+                    if (widget.book.summary != null) ...[
+                      Text(
+                        '📝 ${l10n.summary}',
+                        style: TextStyle(
+                          fontSize: isSmallScreen ? 14 : 16,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? Colors.grey.shade300
+                              : Colors.grey.shade600,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: SizedBox(
+                          width: screenWidth * 0.9,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color:
+                                  isDark ? Colors.grey.shade900 : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(
+                                    isDark ? 0.25 : 0.06,
+                                  ),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: isDark
+                                    ? Colors.grey.shade800
+                                    : Colors.grey.shade200,
+                                width: 1,
+                              ),
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: screenWidth * 0.04,
+                                vertical: 16,
+                              ),
+                              child: Text(
+                                widget.book.summary!,
+                                style: TextStyle(
+                                  fontSize: isSmallScreen ? 14 : 16,
+                                  height: 1.5,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.color,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                    ],
+
+                    // 나의 메모
+                    Text(
+                      '✍️ ${l10n.myMemo}',
+                      style: TextStyle(
+                        fontSize: isSmallScreen ? 18 : 22,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.grey.shade800 : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _noteController,
+                        style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
+                        decoration: InputDecoration(
+                          labelText: l10n.myMemo,
+                          labelStyle:
+                              TextStyle(fontSize: isSmallScreen ? 13 : 15),
+                          hintText: l10n.memoHint,
+                          hintStyle:
+                              TextStyle(fontSize: isSmallScreen ? 12 : 14),
+                          prefixIcon: Icon(
+                            Icons.edit_outlined,
+                            size: isSmallScreen ? 20 : 24,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: isDark
+                              ? Colors.grey.shade800
+                              : Colors.grey.shade100,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: isSmallScreen ? 12 : 16,
+                            vertical: isSmallScreen ? 12 : 16,
+                          ),
+                        ),
+                        maxLines: 6,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    const SizedBox(height: 10),
                   ],
                 ),
-                child: TextField(
-                  controller: _noteController,
-                  style: TextStyle(fontSize: isSmallScreen ? 14 : 16),
-                  decoration: InputDecoration(
-                    labelText: l10n.myMemo,
-                    labelStyle: TextStyle(fontSize: isSmallScreen ? 13 : 15),
-                    hintText: l10n.memoHint,
-                    hintStyle: TextStyle(fontSize: isSmallScreen ? 12 : 14),
-                    prefixIcon: Icon(
-                      Icons.edit_outlined,
-                      size: isSmallScreen ? 20 : 24,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor:
-                        isDark ? Colors.grey.shade800 : Colors.grey.shade100,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: isSmallScreen ? 12 : 16,
-                      vertical: isSmallScreen ? 12 : 16,
-                    ),
-                  ),
-                  maxLines: 6,
-                ),
               ),
-              const SizedBox(height: 16),
-
-              const SizedBox(height: 10),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: SafeArea(

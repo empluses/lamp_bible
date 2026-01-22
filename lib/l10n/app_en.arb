@@ -35,6 +35,7 @@
       "day": {"type": "int"}
     }
   },
+  "bookDetail": "Bible Summary",
   "playVideo": "▶ Play YouTube Video",
   "playPraise": "🎵 Play Praise Video",
   "myNotes": "My Notes",
