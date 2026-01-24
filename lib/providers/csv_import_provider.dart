@@ -14,11 +14,28 @@ class CsvImportProvider extends ChangeNotifier {
   String? _lastError;
   int _importedCount = 0;
   bool _isDownloading = false;
+  bool _initialImportAttempted = false;
+  bool _hasLoadedInitialImportStatus = false;
+  String? _initialImportStatus;
+  String? _initialImportError;
 
   bool get isImporting => _isImporting;
   String? get lastError => _lastError;
   int get importedCount => _importedCount;
   bool get isDownloading => _isDownloading;
+  bool get initialImportAttempted => _initialImportAttempted;
+  bool get initialImportInProgress => _initialImportStatus == 'in_progress';
+  bool get initialImportFailed => _initialImportStatus == 'failed';
+  bool get initialImportSucceeded => _initialImportStatus == 'success';
+  String? get initialImportError => _initialImportError;
+
+  CsvImportProvider() {
+    _loadInitialImportStatus();
+  }
+
+  Future<void> ensureInitialImportStatusLoaded() async {
+    await _loadInitialImportStatus();
+  }
 
   Future<bool> importReadingsAuto() async {
     _isDownloading = true;
@@ -329,5 +346,89 @@ class CsvImportProvider extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<void> _loadInitialImportStatus() async {
+    if (_hasLoadedInitialImportStatus) return;
+    final db = await DatabaseHelper.instance.database;
+    _initialImportAttempted =
+        (await _getAppSetting(db, 'initial_csv_import_attempted')) == '1';
+    _initialImportStatus =
+        await _getAppSetting(db, 'initial_csv_import_status');
+    _initialImportError =
+        await _getAppSetting(db, 'initial_csv_import_error');
+    _hasLoadedInitialImportStatus = true;
+    notifyListeners();
+  }
+
+  Future<String?> _getAppSetting(Database db, String key) async {
+    final result = await db.query(
+      'app_settings',
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return result.first['value'] as String?;
+  }
+
+  Future<void> _setAppSetting(String key, String? value) async {
+    final db = await DatabaseHelper.instance.database;
+    await db.insert(
+      'app_settings',
+      {
+        'key': key,
+        'value': value,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<bool?> runInitialImportIfNeeded() async {
+    await _loadInitialImportStatus();
+    if (_initialImportAttempted) return null;
+    _initialImportAttempted = true;
+    await _setAppSetting('initial_csv_import_attempted', '1');
+    return _runInitialImport();
+  }
+
+  Future<bool> retryInitialImport() async {
+    await _loadInitialImportStatus();
+    _initialImportAttempted = true;
+    await _setAppSetting('initial_csv_import_attempted', '1');
+    return _runInitialImport();
+  }
+
+  Future<bool> _runInitialImport() async {
+    _lastError = null;
+    _initialImportStatus = 'in_progress';
+    _initialImportError = null;
+    await _setAppSetting('initial_csv_import_status', _initialImportStatus);
+    await _setAppSetting('initial_csv_import_error', null);
+    notifyListeners();
+
+    String? failureMessage;
+    final readingsOk = await importReadingsAuto();
+    if (!readingsOk) {
+      failureMessage ??= _lastError;
+    }
+    final booksOk = await importBooksAuto();
+    if (!booksOk) {
+      failureMessage ??= _lastError;
+    }
+
+    final success = readingsOk && booksOk;
+    if (success) {
+      _initialImportStatus = 'success';
+      _initialImportError = null;
+    } else {
+      _initialImportStatus = 'failed';
+      _initialImportError = failureMessage ?? 'CSV 가져오기 실패';
+    }
+    await _setAppSetting('initial_csv_import_status', _initialImportStatus);
+    await _setAppSetting('initial_csv_import_error', _initialImportError);
+    notifyListeners();
+    return success;
   }
 }

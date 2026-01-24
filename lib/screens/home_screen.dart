@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../providers/bible_books_provider.dart';
+import '../providers/bible_reading_provider.dart';
+import '../providers/csv_import_provider.dart';
 import '../providers/reading_history_provider.dart';
 import '../services/date_helper.dart';
 import 'calendar_screen.dart';
@@ -18,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  bool _initialImportDialogShown = false;
 
   @override
   void initState() {
@@ -35,6 +39,9 @@ class _HomeScreenState extends State<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final historyProvider = context.read<ReadingHistoryProvider>();
       historyProvider.loadHistoryForYear(DateTime.now().year);
+
+      final csvProvider = context.read<CsvImportProvider>();
+      _promptInitialDataUpdateIfNeeded(csvProvider);
     });
   }
 
@@ -42,6 +49,46 @@ class _HomeScreenState extends State<HomeScreen>
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _promptInitialDataUpdateIfNeeded(
+    CsvImportProvider csvProvider,
+  ) async {
+    await csvProvider.ensureInitialImportStatusLoaded();
+    if (_initialImportDialogShown || csvProvider.initialImportAttempted) {
+      return;
+    }
+    _initialImportDialogShown = true;
+    if (!mounted) return;
+
+    final l10n = AppLocalizations.of(context)!;
+    final shouldDownload = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(l10n.dataUpdate),
+          content: Text('${l10n.csvImportNotice}${l10n.csvImportNoticeSub}'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.cancel),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l10n.close),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDownload == true && mounted) {
+      final success = await csvProvider.retryInitialImport();
+      if (success && mounted) {
+        await context.read<BibleReadingProvider>().loadAllReadings();
+        await context.read<BibleBooksProvider>().loadAllBooks();
+      }
+    }
   }
 
   String _getEncouragementIcon(double progress) {
@@ -92,290 +139,331 @@ class _HomeScreenState extends State<HomeScreen>
             horizontalPadding,
             12,
           ),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Consumer<ReadingHistoryProvider>(
-              builder: (context, historyProvider, child) {
-                final year = historyProvider.currentYear;
-                final totalDays = DateHelper.getTotalDaysInYear(year);
-                final completedDays = historyProvider.getCompletedCount(year);
-                final uncompletedDays =
-                    historyProvider.getUncompletedCount(year);
-                final streakDays = historyProvider.getStreakDays(year);
-                final progress = historyProvider.getProgressPercentage(year);
+          child: Consumer2<ReadingHistoryProvider, CsvImportProvider>(
+            builder: (context, historyProvider, csvProvider, child) {
+              final year = historyProvider.currentYear;
+              final totalDays = DateHelper.getTotalDaysInYear(year);
+              final completedDays = historyProvider.getCompletedCount(year);
+              final uncompletedDays = historyProvider.getUncompletedCount(year);
+              final streakDays = historyProvider.getStreakDays(year);
+              final progress = historyProvider.getProgressPercentage(year);
 
-                return LayoutBuilder(
-                  builder: (context, constraints) {
-                    final availableHeight = constraints.maxHeight;
-                    final cardPadding = isSmallScreen ? 14.0 : 18.0;
-                    final circleSize = (availableHeight * 0.32)
-                        .clamp(140.0, isSmallScreen ? 170.0 : 200.0);
+              return Column(
+                children: [
+                  if (csvProvider.initialImportInProgress)
+                    MaterialBanner(
+                      content: Text(l10n.downloadingCsv),
+                      leading: const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {},
+                          child: Text(l10n.importing),
+                        ),
+                      ],
+                    ),
+                  Expanded(
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final availableHeight = constraints.maxHeight;
+                          final cardPadding = isSmallScreen ? 14.0 : 18.0;
+                          final circleSize = (availableHeight * 0.32)
+                              .clamp(140.0, isSmallScreen ? 170.0 : 200.0);
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          l10n.homeTitle,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: titleFontSize,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).textTheme.bodyLarge?.color,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                _getProgressColor(progress).withOpacity(0.2),
-                                _getProgressColor(progress).withOpacity(0.08),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            l10n.yearlyReading(year),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: isSmallScreen ? 14 : 16,
-                              fontWeight: FontWeight.w600,
-                              color: _getProgressColor(progress),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Expanded(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: isDark
-                                    ? [
-                                        Colors.grey.shade900,
-                                        Colors.grey.shade800
-                                      ]
-                                    : [Colors.white, Colors.grey.shade50],
-                              ),
-                              borderRadius: BorderRadius.circular(26),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _getProgressColor(progress)
-                                      .withOpacity(0.25),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                l10n.homeTitle,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: titleFontSize,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context)
+                                      .textTheme
+                                      .bodyLarge
+                                      ?.color,
                                 ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: EdgeInsets.all(cardPadding),
-                              child: Column(
-                                children: [
-                                  Text(
-                                    l10n.progressStatus,
-                                    style: TextStyle(
-                                      fontSize: isSmallScreen ? 15 : 17,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge
-                                          ?.color,
-                                    ),
+                              ),
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      _getProgressColor(progress)
+                                          .withOpacity(0.2),
+                                      _getProgressColor(progress)
+                                          .withOpacity(0.08),
+                                    ],
                                   ),
-                                  const SizedBox(height: 8),
-                                  Expanded(
-                                    child: Row(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  l10n.yearlyReading(year),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: isSmallScreen ? 14 : 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: _getProgressColor(progress),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: isDark
+                                          ? [
+                                              Colors.grey.shade900,
+                                              Colors.grey.shade800
+                                            ]
+                                          : [Colors.white, Colors.grey.shade50],
+                                    ),
+                                    borderRadius: BorderRadius.circular(26),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _getProgressColor(progress)
+                                            .withOpacity(0.25),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Padding(
+                                    padding: EdgeInsets.all(cardPadding),
+                                    child: Column(
                                       children: [
+                                        Text(
+                                          l10n.progressStatus,
+                                          style: TextStyle(
+                                            fontSize: isSmallScreen ? 15 : 17,
+                                            fontWeight: FontWeight.bold,
+                                            color: Theme.of(context)
+                                                .textTheme
+                                                .bodyLarge
+                                                ?.color,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
                                         Expanded(
-                                          flex: 6,
-                                          child: Center(
-                                            child: SizedBox(
-                                              width: circleSize,
-                                              height: circleSize,
-                                              child: Stack(
-                                                alignment: Alignment.center,
-                                                children: [
-                                                  SizedBox(
+                                          child: Row(
+                                            children: [
+                                              Expanded(
+                                                flex: 6,
+                                                child: Center(
+                                                  child: SizedBox(
                                                     width: circleSize,
                                                     height: circleSize,
-                                                    child:
-                                                        CircularProgressIndicator(
-                                                      value: progress / 100,
-                                                      strokeWidth: isSmallScreen
-                                                          ? 10
-                                                          : 12,
-                                                      backgroundColor:
-                                                          Colors.grey.shade300,
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation<
-                                                              Color>(
-                                                        _getProgressColor(
-                                                          progress,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  Column(
-                                                    mainAxisSize:
-                                                        MainAxisSize.min,
-                                                    children: [
-                                                      FittedBox(
-                                                        child: Text(
-                                                          '${progress.toStringAsFixed(1)}%',
-                                                          style: TextStyle(
-                                                            fontSize:
-                                                                circleSize *
-                                                                    0.18,
-                                                            fontWeight:
-                                                                FontWeight.bold,
-                                                            color:
-                                                                _getProgressColor(
-                                                              progress,
+                                                    child: Stack(
+                                                      alignment:
+                                                          Alignment.center,
+                                                      children: [
+                                                        SizedBox(
+                                                          width: circleSize,
+                                                          height: circleSize,
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                            value:
+                                                                progress / 100,
+                                                            strokeWidth:
+                                                                isSmallScreen
+                                                                    ? 10
+                                                                    : 12,
+                                                            backgroundColor:
+                                                                Colors.grey
+                                                                    .shade300,
+                                                            valueColor:
+                                                                AlwaysStoppedAnimation<
+                                                                    Color>(
+                                                              _getProgressColor(
+                                                                progress,
+                                                              ),
                                                             ),
                                                           ),
                                                         ),
-                                                      ),
-                                                      FittedBox(
-                                                        child: Text(
-                                                          '$completedDays / ${l10n.days(totalDays)}',
-                                                          style: TextStyle(
-                                                            fontSize:
-                                                                circleSize *
-                                                                    0.08,
-                                                            color: Colors
-                                                                .grey.shade600,
-                                                          ),
+                                                        Column(
+                                                          mainAxisSize:
+                                                              MainAxisSize.min,
+                                                          children: [
+                                                            FittedBox(
+                                                              child: Text(
+                                                                '${progress.toStringAsFixed(1)}%',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize:
+                                                                      circleSize *
+                                                                          0.18,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  color:
+                                                                      _getProgressColor(
+                                                                    progress,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            FittedBox(
+                                                              child: Text(
+                                                                '$completedDays / ${l10n.days(totalDays)}',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize:
+                                                                      circleSize *
+                                                                          0.08,
+                                                                  color: Colors
+                                                                      .grey
+                                                                      .shade600,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                flex: 5,
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    if (isSmallScreen) ...[
+                                                      _buildCompactStat(
+                                                        '✅',
+                                                        l10n.days(
+                                                            completedDays),
+                                                        Colors.green,
+                                                        isDark,
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      _buildCompactStat(
+                                                        '⏳',
+                                                        l10n.days(
+                                                            uncompletedDays),
+                                                        Colors.orange,
+                                                        isDark,
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      _buildCompactStat(
+                                                        '🔥',
+                                                        l10n.days(streakDays),
+                                                        Colors.red,
+                                                        isDark,
+                                                      ),
+                                                    ] else ...[
+                                                      _buildStatCard(
+                                                        context,
+                                                        '✅',
+                                                        l10n.completed,
+                                                        l10n.days(
+                                                            completedDays),
+                                                        Colors.green,
+                                                        isDark,
+                                                        isSmallScreen,
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      _buildStatCard(
+                                                        context,
+                                                        '⏳',
+                                                        l10n.remaining,
+                                                        l10n.days(
+                                                            uncompletedDays),
+                                                        Colors.orange,
+                                                        isDark,
+                                                        isSmallScreen,
+                                                      ),
+                                                      const SizedBox(height: 8),
+                                                      _buildStatCard(
+                                                        context,
+                                                        '🔥',
+                                                        l10n.streak,
+                                                        l10n.days(streakDays),
+                                                        Colors.red,
+                                                        isDark,
+                                                        isSmallScreen,
                                                       ),
                                                     ],
-                                                  ),
-                                                ],
+                                                  ],
+                                                ),
                                               ),
-                                            ),
+                                            ],
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          flex: 5,
-                                          child: Column(
+                                        const SizedBox(height: 10),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 10,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _getProgressColor(progress)
+                                                .withOpacity(0.08),
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                          ),
+                                          child: Row(
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              if (isSmallScreen) ...[
-                                                _buildCompactStat(
-                                                  '✅',
-                                                  l10n.days(completedDays),
-                                                  Colors.green,
-                                                  isDark,
+                                              Text(
+                                                _getEncouragementIcon(progress),
+                                                style: TextStyle(
+                                                  fontSize:
+                                                      isSmallScreen ? 24 : 28,
                                                 ),
-                                                const SizedBox(height: 8),
-                                                _buildCompactStat(
-                                                  '⏳',
-                                                  l10n.days(uncompletedDays),
-                                                  Colors.orange,
-                                                  isDark,
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Flexible(
+                                                child: Text(
+                                                  _getEncouragementMessage(
+                                                    context,
+                                                    progress,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                  style: TextStyle(
+                                                    fontSize:
+                                                        isSmallScreen ? 12 : 14,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: _getProgressColor(
+                                                        progress),
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
-                                                const SizedBox(height: 8),
-                                                _buildCompactStat(
-                                                  '🔥',
-                                                  l10n.days(streakDays),
-                                                  Colors.red,
-                                                  isDark,
-                                                ),
-                                              ] else ...[
-                                                _buildStatCard(
-                                                  context,
-                                                  '✅',
-                                                  l10n.completed,
-                                                  l10n.days(completedDays),
-                                                  Colors.green,
-                                                  isDark,
-                                                  isSmallScreen,
-                                                ),
-                                                const SizedBox(height: 8),
-                                                _buildStatCard(
-                                                  context,
-                                                  '⏳',
-                                                  l10n.remaining,
-                                                  l10n.days(uncompletedDays),
-                                                  Colors.orange,
-                                                  isDark,
-                                                  isSmallScreen,
-                                                ),
-                                                const SizedBox(height: 8),
-                                                _buildStatCard(
-                                                  context,
-                                                  '🔥',
-                                                  l10n.streak,
-                                                  l10n.days(streakDays),
-                                                  Colors.red,
-                                                  isDark,
-                                                  isSmallScreen,
-                                                ),
-                                              ],
+                                              ),
                                             ],
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: _getProgressColor(progress)
-                                          .withOpacity(0.08),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          _getEncouragementIcon(progress),
-                                          style: TextStyle(
-                                            fontSize: isSmallScreen ? 24 : 28,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Flexible(
-                                          child: Text(
-                                            _getEncouragementMessage(
-                                              context,
-                                              progress,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              fontSize: isSmallScreen ? 12 : 14,
-                                              fontWeight: FontWeight.w600,
-                                              color:
-                                                  _getProgressColor(progress),
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                );
-              },
-            ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),

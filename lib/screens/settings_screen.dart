@@ -314,6 +314,56 @@ class SettingsScreen extends StatelessWidget {
     }
   }
 
+  Future<void> _handleInitialDataUpdate(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final csvProvider = context.read<CsvImportProvider>();
+    final readingProvider = context.read<BibleReadingProvider>();
+    final booksProvider = context.read<BibleBooksProvider>();
+    final success = await csvProvider.retryInitialImport();
+    if (context.mounted) {
+      if (success) {
+        await readingProvider.loadAllReadings();
+        await booksProvider.loadAllBooks();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.downloadSuccess),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        final errorMessage = csvProvider.initialImportError ??
+            csvProvider.lastError ??
+            l10n.unknownError;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.importFailed(errorMessage)),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _getInitialImportStatusText(
+    CsvImportProvider csvProvider,
+    AppLocalizations l10n,
+  ) {
+    if (csvProvider.initialImportInProgress) {
+      return l10n.downloadingCsv;
+    }
+    if (!csvProvider.initialImportAttempted) {
+      return l10n.csvImportNotice;
+    }
+    if (csvProvider.initialImportFailed) {
+      final errorMessage = csvProvider.initialImportError;
+      if (errorMessage == null || errorMessage.isEmpty) {
+        return l10n.downloadFailed;
+      }
+      return l10n.importFailed(errorMessage);
+    }
+    return l10n.downloadSuccess;
+  }
+
   String _getThemeModeText(ThemeMode mode, AppLocalizations l10n) {
     switch (mode) {
       case ThemeMode.light:
@@ -342,6 +392,32 @@ class SettingsScreen extends StatelessWidget {
             context,
             title: l10n.dataUpdate,
             children: [
+              Consumer<CsvImportProvider>(
+                builder: (context, csvProvider, child) {
+                  final isBusy = csvProvider.isDownloading ||
+                      csvProvider.isImporting ||
+                      csvProvider.initialImportInProgress;
+                  return ListTile(
+                    leading:
+                        const Icon(Icons.cloud_download, color: Colors.blue),
+                    title: Text(l10n.dataUpdate),
+                    subtitle:
+                        Text(_getInitialImportStatusText(csvProvider, l10n)),
+                    trailing: isBusy
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.refresh),
+                            tooltip: l10n.dataUpdate,
+                            onPressed: () => _handleInitialDataUpdate(context),
+                          ),
+                  );
+                },
+              ),
+              /*
               Consumer2<CsvImportProvider, BibleReadingProvider>(
                 builder: (context, csvProvider, readingProvider, child) {
                   return ListTile(
@@ -438,6 +514,7 @@ class SettingsScreen extends StatelessWidget {
                   );
                 },
               ),
+              */
             ],
           ),
           _buildSection(
